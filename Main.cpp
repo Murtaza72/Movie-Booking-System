@@ -5,7 +5,7 @@
 #include <vector>
 
 #define MOVIE_NUM 3
-#define ROW_NUM 6
+#define ROW_NUM 10
 #define SEAT_NUM 10
 
 using namespace std;
@@ -18,23 +18,10 @@ private:
     int duration;
     float rating;
 
-private:
-    void SetDetails();
     friend istream& operator>>(istream& file, Movie& m);
-    friend ostream& operator<<(ostream& file, Movie& m);
     friend class Theater;
     friend class Billing;
 };
-
-void Movie::SetDetails()
-{
-    cout << "Movie Name: ";
-    cin >> name;
-    cout << "Duration: ";
-    cin >> duration;
-    cout << "Rating: ";
-    cin >> rating;
-}
 
 istream& operator>>(istream& file, Movie& m)
 {
@@ -56,16 +43,6 @@ istream& operator>>(istream& file, Movie& m)
     {
         // cout << "Exception(in Movie)" << endl;
     }
-
-    return file;
-}
-
-ostream& operator<<(ostream& file, Movie& m)
-{
-    file << m.name << endl;
-    file << m.duration << endl;
-    file << m.rating << endl;
-    file << "--------" << endl;
 
     return file;
 }
@@ -103,41 +80,6 @@ Theater::Theater()
     }
     movieFile.close();
 }
-//
-// void Theater::AddMovies()
-// {
-//     ofstream movieFile("Movies.txt", ios::app);
-//     Movie m;
-//     m.SetDetails();
-//     movieFile << m;
-// }
-//
-// void Theater::RemoveMovieFromFile()
-// {
-//     ifstream movieFile("Movies.txt", ios::in);
-//     ofstream temp("temp.txt", ios::out);
-//
-//     Movie m;
-//     m.SetDetails();
-//
-//     Movie curr;
-//
-//     if (movieFile.is_open())
-//     {
-//         while (movieFile >> curr)
-//         {
-//             if (!(curr.name == m.name))
-//             {
-//                 temp << curr;
-//             }
-//         }
-//     }
-//     movieFile.close();
-//     temp.close();
-//
-//     remove("Movies.txt");
-//     rename("temp.txt", "Movies.txt");
-// }
 
 int Theater::DisplayMovies()
 {
@@ -145,6 +87,7 @@ int Theater::DisplayMovies()
 
     cout << endl;
     cout << "Select a Movie" << endl << endl;
+
     for (int i = 0; i < MOVIE_NUM; i++)
     {
         cout << "\t[" << i + 1 << "] " << movies[i].name << endl;
@@ -153,6 +96,7 @@ int Theater::DisplayMovies()
     cout << endl;
     cout << "Movie number: ";
     cin >> choice;
+
     try
     {
         if (choice > 0 && choice <= MOVIE_NUM)
@@ -188,6 +132,7 @@ int Theater::DisplayTimeSlots()
 
     cout << endl;
     cout << "Select a time slot" << endl << endl;
+
     for (int i = 0; i < 5; i++)
     {
         cout << "\t[" << i + 1 << "] " << timeSlot[i] << ":00 to "
@@ -235,24 +180,12 @@ private:
     void SetTicketNum();
     friend istream& operator>>(istream& file, Ticket& t);
     friend ostream& operator<<(ostream& file, Ticket& t);
-    friend bool operator==(const Ticket& lhs, const Ticket& rhs);
     friend class Booking;
     friend class Billing;
 
 public:
     void SetDetails(int slot, int mno);
 };
-
-bool operator==(const Ticket& lhs, const Ticket& rhs)
-{
-    if (lhs.timeSlot == rhs.timeSlot && lhs.movieID == rhs.movieID &&
-        lhs.rowNo == rhs.rowNo && lhs.seatNo == rhs.seatNo &&
-        lhs.type == rhs.type)
-    {
-        return true;
-    }
-    return false;
-}
 
 void Ticket::SetDetails(int slot, int mno)
 {
@@ -296,15 +229,15 @@ void Ticket::SetSeat()
 
 void Ticket::SetType()
 {
-    if (rowNo <= 2)
+    if (rowNo <= 3)
     {
         type = "Platinum";
     }
-    else if (rowNo > 2 && rowNo <= 4)
+    else if (rowNo > 3 && rowNo <= 6)
     {
         type = "Gold";
     }
-    else if (rowNo > 4 && rowNo <= 6)
+    else if (rowNo > 6 && rowNo <= 10)
     {
         type = "Silver";
     }
@@ -345,14 +278,14 @@ istream& operator>>(istream& file, Ticket& t)
 
         getline(file, temp);
         t.price = stoi(temp);
+
+        getline(file, t.type);
+        getline(file, temp);
     }
     catch (exception e)
     {
         // cout << "Exception(in Ticket)" << endl;
     }
-
-    getline(file, t.type);
-    getline(file, temp);
 
     return file;
 }
@@ -395,7 +328,8 @@ void Billing::PrintReceipt(Ticket t)
     cout << "Seat Type: " << t.type << endl;
     cout << "Seat: " << row << t.seatNo << endl;
     cout << "Price: Rs. " << t.price << endl;
-    cout << "------------------------------------------------------" << endl;
+    cout << "------------------------------------------------------" << endl
+         << endl;
 }
 
 class Booking
@@ -525,17 +459,17 @@ void Booking::DisplayAvailableSeats(int timeSlot, int mId)
     cout << "--------Displaying Seats--------" << endl;
     for (int i = 1; i <= ROW_NUM; i++)
     {
-        if (i <= 2 && skip % 2 == 0)
+        if (i <= 3 && skip % 2 == 0)
         {
             cout << "[Platinum]" << endl;
             skip++;
         }
-        else if (i > 2 && i <= 4 && skip % 2 == 1)
+        else if (i > 3 && i <= 6 && skip % 2 == 1)
         {
             cout << "[Gold]" << endl;
             skip++;
         }
-        else if (i > 4 && i <= 6 && skip % 2 == 0)
+        else if (i > 6 && i <= 10 && skip % 2 == 0)
         {
             cout << "[Silver]" << endl;
             skip++;
@@ -651,6 +585,7 @@ void Member::Register()
 {
     cout << endl;
     cout << "Registering for Membership:" << endl;
+
     Customer::SetDetails();
     accountNumber = to_string((rand() % 9999) + 10000);
     SetPassword();
@@ -704,8 +639,6 @@ ostream& operator<<(ostream& file, Member& m)
     return file;
 }
 
-int loggedIn = 0;
-
 class MemberDatabase
 {
 private:
@@ -713,8 +646,6 @@ private:
 
 public:
     MemberDatabase();
-    void Display(Member m);
-    void DisplayAllRecords();
     void SaveRecord(Member m);
     bool Login(string name);
     bool CheckPassword(Member m, string password);
@@ -748,36 +679,6 @@ void MemberDatabase::SaveRecord(Member m)
     }
 
     memberFile.close();
-}
-
-void MemberDatabase::DisplayAllRecords()
-{
-    cout << "======================================================\n"
-         << "                   MEMBER INFORMATION                 \n"
-         << "======================================================\n";
-
-    for (int i = 0; i < members.size(); i++)
-    {
-        cout << "Account Number : " << members[i].accountNumber << endl;
-        cout << "Name           : " << members[i].name << endl;
-        cout << "Phone no.      : " << members[i].phone << endl;
-        cout << "E-mail         : " << members[i].email << endl;
-        cout << "------------------------------------------------------"
-             << endl;
-    }
-}
-
-void MemberDatabase::Display(Member m)
-{
-    cout << "======================================================\n"
-         << "                   MEMBER INFORMATION                 \n"
-         << "======================================================\n";
-
-    cout << "Account Number : " << m.accountNumber << endl;
-    cout << "Name           : " << m.name << endl;
-    cout << "Phone no.      : " << m.phone << endl;
-    cout << "E-mail         : " << m.email << endl;
-    cout << "------------------------------------------------------" << endl;
 }
 
 bool MemberDatabase::CheckPassword(Member m, string password)
@@ -955,9 +856,6 @@ int MemberMenu()
             cout << "Name: ";
             cin >> name;
             bool logged = db.Login(name);
-
-            cout << "Logged: " << logged << endl;
-            system("pause");
 
             if (logged)
             {
