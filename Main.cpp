@@ -20,9 +20,10 @@ private:
 
 private:
     void SetDetails();
-    friend class Theater;
     friend istream& operator>>(istream& file, Movie& m);
     friend ostream& operator<<(ostream& file, Movie& m);
+    friend class Theater;
+    friend class Billing;
 };
 
 void Movie::SetDetails()
@@ -53,7 +54,7 @@ istream& operator>>(istream& file, Movie& m)
     }
     catch (...)
     {
-        cout << "Exception(in Movie)" << endl;
+        // cout << "Exception(in Movie)" << endl;
     }
 
     return file;
@@ -79,11 +80,11 @@ private:
 
 public:
     Theater();
-    void AddMovies();
-    void RemoveMovieFromFile();
     int DisplayMovies();
     void DisplayMovieDetails(int id);
     int DisplayTimeSlots();
+    Movie GetMovie(int id);
+    int GetTimeSlot(int time) { return timeSlot[time + 1]; }
 };
 
 Theater::Theater()
@@ -102,53 +103,54 @@ Theater::Theater()
     }
     movieFile.close();
 }
-
-void Theater::AddMovies()
-{
-    ofstream movieFile("Movies.txt", ios::app);
-    Movie m;
-    m.SetDetails();
-    movieFile << m;
-}
-
-void Theater::RemoveMovieFromFile()
-{
-    ifstream movieFile("Movies.txt", ios::in);
-    ofstream temp("temp.txt", ios::out);
-
-    Movie m;
-    m.SetDetails();
-
-    Movie curr;
-
-    if (movieFile.is_open())
-    {
-        while (movieFile >> curr)
-        {
-            if (!(curr.name == m.name))
-            {
-                temp << curr;
-            }
-        }
-    }
-    movieFile.close();
-    temp.close();
-
-    remove("Movies.txt");
-    rename("temp.txt", "Movies.txt");
-}
+//
+// void Theater::AddMovies()
+// {
+//     ofstream movieFile("Movies.txt", ios::app);
+//     Movie m;
+//     m.SetDetails();
+//     movieFile << m;
+// }
+//
+// void Theater::RemoveMovieFromFile()
+// {
+//     ifstream movieFile("Movies.txt", ios::in);
+//     ofstream temp("temp.txt", ios::out);
+//
+//     Movie m;
+//     m.SetDetails();
+//
+//     Movie curr;
+//
+//     if (movieFile.is_open())
+//     {
+//         while (movieFile >> curr)
+//         {
+//             if (!(curr.name == m.name))
+//             {
+//                 temp << curr;
+//             }
+//         }
+//     }
+//     movieFile.close();
+//     temp.close();
+//
+//     remove("Movies.txt");
+//     rename("temp.txt", "Movies.txt");
+// }
 
 int Theater::DisplayMovies()
 {
     int choice;
 
     cout << endl;
-    cout << "Select a Movie" << endl;
+    cout << "Select a Movie" << endl << endl;
     for (int i = 0; i < MOVIE_NUM; i++)
     {
         cout << "\t[" << i + 1 << "] " << movies[i].name << endl;
     }
 
+    cout << endl;
     cout << "Movie number: ";
     cin >> choice;
     try
@@ -161,7 +163,8 @@ int Theater::DisplayMovies()
     }
     catch (int choice)
     {
-        cout << "Invalid choice. Enter correct movie number." << endl;
+        cout << "INVALID CHOICE. ENTER CORRECT MOVIE NUMBER." << endl;
+        system("pause");
         return -1;
     }
 }
@@ -175,7 +178,7 @@ void Theater::DisplayMovieDetails(int id)
         cout << "--------Movie Details--------" << endl;
         cout << "Movie Name:\t" << movies[index].name << endl;
         cout << "Duration:\t" << movies[index].duration << " minutes" << endl;
-        cout << "Ratings:\t" << movies[index].rating << endl;
+        cout << "Ratings:\t" << movies[index].rating << " / 10" << endl;
     }
 }
 
@@ -184,12 +187,14 @@ int Theater::DisplayTimeSlots()
     int choice;
 
     cout << endl;
-    cout << "Select a time slot" << endl;
+    cout << "Select a time slot" << endl << endl;
     for (int i = 0; i < 5; i++)
     {
         cout << "\t[" << i + 1 << "] " << timeSlot[i] << ":00 to "
              << timeSlot[i + 1] << ":00" << endl;
     }
+
+    cout << endl;
     cout << "Slot number: ";
     cin >> choice;
     cout << endl;
@@ -204,14 +209,18 @@ int Theater::DisplayTimeSlots()
     }
     catch (int choice)
     {
-        cout << "Invalid choice. Enter correct slot number" << endl;
+        cout << "INVALID CHOICE. ENTER CORRECT SLOT NUMBER" << endl;
+        system("pause");
         return -1;
     }
 }
 
+Movie Theater::GetMovie(int id) { return movies[id - 1]; }
+
 class Ticket
 {
 private:
+    int ticketNum;
     int timeSlot;
     int movieID;
     int seatNo, rowNo;
@@ -223,6 +232,7 @@ private:
     void SetSeat();
     void SetType();
     void SetPrice();
+    void SetTicketNum();
     friend istream& operator>>(istream& file, Ticket& t);
     friend ostream& operator<<(ostream& file, Ticket& t);
     friend bool operator==(const Ticket& lhs, const Ticket& rhs);
@@ -246,6 +256,7 @@ bool operator==(const Ticket& lhs, const Ticket& rhs)
 
 void Ticket::SetDetails(int slot, int mno)
 {
+    SetTicketNum();
     timeSlot = slot;
     movieID = mno;
     SetRow();
@@ -263,7 +274,7 @@ int Ticket::SetRow()
 
     while (i < 'A' || i > (ROW_NUM + 'A' - 1))  // i > (6 + 65 - 1)
     {
-        cout << "Enter the correct row(Capital): ";
+        cout << "Enter the correct row (capital): ";
         cin >> c;
         i = c;
     }
@@ -310,11 +321,16 @@ void Ticket::SetPrice()
         price = 250;
 }
 
+void Ticket::SetTicketNum() { ticketNum = rand() % 99 + 100; }
+
 istream& operator>>(istream& file, Ticket& t)
 {
     string temp;
     try
     {
+        getline(file, temp);
+        t.ticketNum = stoi(temp);
+
         getline(file, temp);
         t.timeSlot = stoi(temp);
 
@@ -332,7 +348,7 @@ istream& operator>>(istream& file, Ticket& t)
     }
     catch (exception e)
     {
-        cout << "Exception(in Ticket)" << endl;
+        // cout << "Exception(in Ticket)" << endl;
     }
 
     getline(file, t.type);
@@ -343,6 +359,7 @@ istream& operator>>(istream& file, Ticket& t)
 
 ostream& operator<<(ostream& file, Ticket& t)
 {
+    file << t.ticketNum << endl;
     file << t.timeSlot << endl;
     file << t.movieID << endl;
     file << t.rowNo << endl;
@@ -354,26 +371,55 @@ ostream& operator<<(ostream& file, Ticket& t)
     return file;
 }
 
+class Billing
+{
+public:
+    static void PrintReceipt(Ticket t);
+};
+
+void Billing::PrintReceipt(Ticket t)
+{
+    Theater theater;
+    Movie m = theater.GetMovie(t.movieID);
+    int time = theater.GetTimeSlot(t.timeSlot);
+    char row = t.rowNo + 64;
+
+    system("cls");
+    cout << "======================================================\n"
+         << "                       RECEIPT                        \n"
+         << "======================================================\n";
+
+    cout << "Ticket Number: " << t.ticketNum << endl;
+    cout << "Movie Name: " << m.name << "\t\tTime: " << time << ":00("
+         << t.timeSlot << ")" << endl;
+    cout << "Seat Type: " << t.type << endl;
+    cout << "Seat: " << row << t.seatNo << endl;
+    cout << "Price: Rs. " << t.price << endl;
+    cout << "------------------------------------------------------" << endl;
+}
+
 class Booking
 {
 private:
     int bookedSeats[5 + 1][MOVIE_NUM + 1][ROW_NUM + 1][SEAT_NUM + 1] = {0};
+    vector<Ticket> tickets;
 
 private:
     int CheckSeat(int timeSlot, int mId, int row, int seat);
     void ReserveSeat(Ticket t);
-    void RemoveTicketFromFile(Ticket t);
+    void RemoveTicketFromFile(int tNum);
+    Ticket GetTicket(int tNum);
 
 public:
     Booking();
     void BookTicket(int slot, int mno);
-    void CancelTicket(Ticket t);
+    void CancelTicket(int tNum);
     void DisplayAvailableSeats(int timeSlot, int mId);
 };
 
 Booking::Booking()
 {
-    ifstream booking("Booked.txt", ios::in);
+    ifstream booking("Tickets.txt", ios::in);
 
     Ticket t;
 
@@ -382,8 +428,20 @@ Booking::Booking()
         while (booking >> t)
         {
             bookedSeats[t.timeSlot][t.movieID][t.rowNo][t.seatNo] = 1;
+            tickets.push_back(t);
         }
         booking.close();
+    }
+}
+
+Ticket Booking::GetTicket(int tNum)
+{
+    for (int i = 0; i < tickets.size(); i++)
+    {
+        if (tickets[i].ticketNum == tNum)
+        {
+            return tickets[i];
+        }
     }
 }
 
@@ -401,22 +459,24 @@ int Booking::CheckSeat(int timeSlot, int mId, int row, int seat)
 
 void Booking::ReserveSeat(Ticket t)
 {
-    ofstream booking("Booked.txt", ios::app);
+    ofstream booking("Tickets.txt", ios::app);
 
     if (CheckSeat(t.timeSlot, t.movieID, t.rowNo, t.seatNo) == 0)
     {
         booking << t;
+        tickets.push_back(t);
         bookedSeats[t.timeSlot][t.movieID][t.rowNo][t.seatNo] = 1;
+        Billing::PrintReceipt(t);
     }
     else
     {
-        cout << "Seat already reserved" << endl;
+        cout << "SEAT IS RESERVED. SELECT ANOTHER SEAT" << endl;
     }
 }
 
-void Booking::RemoveTicketFromFile(Ticket t)
+void Booking::RemoveTicketFromFile(int tNum)
 {
-    ifstream booking("Booked.txt", ios::in);
+    ifstream booking("Tickets.txt", ios::in);
     ofstream temp("temp.txt", ios::out);
 
     Ticket curr;
@@ -424,7 +484,7 @@ void Booking::RemoveTicketFromFile(Ticket t)
     {
         while (booking >> curr)
         {
-            if (!(curr == t))
+            if (!(curr.ticketNum == tNum))
             {
                 temp << curr;
             }
@@ -433,29 +493,32 @@ void Booking::RemoveTicketFromFile(Ticket t)
     booking.close();
     temp.close();
 
-    remove("Booked.txt");
-    rename("temp.txt", "Booked.txt");
-    cout << "Ticket Cancelled Successfully" << endl;
+    remove("Tickets.txt");
+    rename("temp.txt", "Tickets.txt");
+
+    cout << endl;
+    cout << "TICKET CANCELLED SUCCESSFULLY" << endl << endl;
 }
 
-void Booking::CancelTicket(Ticket t)
+void Booking::CancelTicket(int tNum)
 {
+    Ticket t = GetTicket(tNum);
+
     if (CheckSeat(t.timeSlot, t.movieID, t.rowNo, t.seatNo) == 1)
     {
         bookedSeats[t.timeSlot][t.movieID][t.rowNo][t.seatNo] = 0;
-        RemoveTicketFromFile(t);
+        RemoveTicketFromFile(tNum);
     }
     else if (CheckSeat(t.timeSlot, t.movieID, t.rowNo, t.seatNo) == 0)
     {
-        cout << "Ticket doesn't exist in our database. Did you enter the "
-                "correct details?"
+        cout << "TICKET DOESN'T EXIST IN OUR DATABASE. DID YOU ENTER THE "
+                "CORRECT DETAILS?"
              << endl;
     }
 }
 
 void Booking::DisplayAvailableSeats(int timeSlot, int mId)
 {
-    // system("clear");
     int skip = 0;
 
     cout << endl << endl;
@@ -564,7 +627,7 @@ void Customer::SetEmail()
             }
         }
 
-        cout << "Invalid email address" << endl;
+        cout << "INVALID EMAIL ADDRESS" << endl;
         cout << "Enter a valid email address: ";
         cin >> email;
     }
@@ -648,16 +711,12 @@ class MemberDatabase
 private:
     vector<Member> members;
 
-private:
-    Member GetMember(string name);
-
 public:
     MemberDatabase();
     void Display(Member m);
     void DisplayAllRecords();
     void SaveRecord(Member m);
-    bool CheckMember(string name);
-    Member Login(string name);
+    bool Login(string name);
     bool CheckPassword(Member m, string password);
 };
 
@@ -675,17 +734,6 @@ MemberDatabase::MemberDatabase()
     }
 
     memberFile.close();
-}
-
-Member MemberDatabase::GetMember(string name)
-{
-    for (int i = 0; i < members.size(); i++)
-    {
-        if (name == members[i].name)
-        {
-            return members[i];
-        }
-    }
 }
 
 void MemberDatabase::SaveRecord(Member m)
@@ -732,21 +780,6 @@ void MemberDatabase::Display(Member m)
     cout << "------------------------------------------------------" << endl;
 }
 
-bool MemberDatabase::CheckMember(string name)
-{
-    bool flag = false;
-    for (int i = 0; i < members.size(); i++)
-    {
-        if (name == members[i].name)
-        {
-            flag = true;
-            break;
-        }
-    }
-
-    return flag;
-}
-
 bool MemberDatabase::CheckPassword(Member m, string password)
 {
     if (m.password == password)
@@ -756,46 +789,34 @@ bool MemberDatabase::CheckPassword(Member m, string password)
     return false;
 }
 
-Member MemberDatabase::Login(string name)
+bool MemberDatabase::Login(string name)
 {
     string password;
-
-    if (CheckMember(name))
+    bool logged = false;
+    for (int i = 0; i < members.size(); i++)
     {
-        Member m = GetMember(name);
-        cout << "Password: ";
-        cin >> password;
-        if (CheckPassword(m, password))
+        if (name == members[i].name)
         {
-            loggedIn = 1;
-            cout << "Logged In successfully" << endl;
-            return m;
-        }
-        else
-        {
-            cout << "Wrong password" << endl;
+            Member m = members[i];
+            cout << "Password: ";
+            cin >> password;
+            if (CheckPassword(m, password))
+            {
+                logged = true;
+                cout << "Logged In successfully" << endl << endl;
+            }
+            else
+            {
+                cout << "WRONG PASSWORD" << endl << endl;
+            }
+            break;
         }
     }
-    else
+    if (!logged)
     {
-        cout << "Member doesn't exist. Signup first." << endl;
+        cout << "MEMBER DOESN'T EXIST. SIGNUP FIRST." << endl << endl;
     }
-}
-
-class Billing
-{
-private:
-    int totalPrice;
-    int numTicket;
-
-public:
-    int getTotalPrice(Ticket t);
-};
-
-int Billing::getTotalPrice(Ticket t)
-{
-    totalPrice = t.price;
-    return totalPrice;
+    return logged;
 }
 
 // helper functions
@@ -807,7 +828,7 @@ void Title()
     const int WIDTH2 = 20;
     const string heading = "MOVIE TICKET RESERVATION SYSTEM";
 
-    cout << endl << endl;
+    cout << endl;
 
     for (int i = 0; i < WIDTH2; i++)
     {
@@ -841,23 +862,20 @@ void Title()
 
 Theater theater;
 Booking booking;
-Member logged;
 MemberDatabase db;
+Billing billing;
 
-void MainMenu()
+void TicketMenu()
 {
     int slot, mno, ch = 0;
 
-    while (ch != 4)
+    while (ch != 3)
     {
-        // system("clear");
-        system("CLS");
-
+        Title();
         cout << endl;
         cout << "[1] Book a Ticket" << endl;
         cout << "[2] Cancel Ticket" << endl;
-        cout << "[3] Generate Bill" << endl;
-        cout << "[4] Previous Menu" << endl;
+        cout << "[3] Previous Menu" << endl << endl;
         cout << "Choice: ";
         cin >> ch;
 
@@ -866,12 +884,15 @@ void MainMenu()
         case 1:
         {
             system("cls");
+
             mno = theater.DisplayMovies();
             if (mno != -1)
             {
+                system("cls");
                 slot = theater.DisplayTimeSlots();
                 if (slot != -1)
                 {
+                    system("cls");
                     theater.DisplayMovieDetails(mno);
                     booking.DisplayAvailableSeats(slot, mno);
                     booking.BookTicket(slot, mno);
@@ -884,32 +905,24 @@ void MainMenu()
         case 2:
         {
             system("cls");
-            Ticket t;
-            cout << "Enter the details of ticket to be cancelled" << endl;
-            cout << "Timeslot: ";
-            cin >> slot;
-            cout << "Movie Number: ";
-            cin >> mno;
-            t.SetDetails(slot, mno);
-            booking.CancelTicket(t);
+
+            int tNum;
+            cout << "Enter Ticket Number: ";
+            cin >> tNum;
+
+            booking.CancelTicket(tNum);
+
             system("pause");
             break;
         }
 
         case 3:
         {
-            cout << "Generating bill" << endl;
-            system("pause");
-            break;
-        }
-
-        case 4:
-        {
             break;
         }
 
         default:
-            cout << "Invalid choice" << endl;
+            cout << "INVALID CHOICE" << endl << endl;
             system("pause");
             break;
         }
@@ -923,11 +936,13 @@ int MemberMenu()
 
     while (choice != 4)
     {
+        Title();
+
         cout << endl;
         cout << "[1] Login (for Members)" << endl;
         cout << "[2] Signup for Membership" << endl;
         cout << "[3] Continue as guest" << endl;
-        cout << "[4] Exit" << endl;
+        cout << "[4] Exit" << endl << endl;
         cout << "Choice: ";
         cin >> choice;
 
@@ -935,13 +950,21 @@ int MemberMenu()
         {
         case 1:
         {
+            cout << endl;
+            cout << "Enter the details of the Member:" << endl;
             cout << "Name: ";
             cin >> name;
-            logged = db.Login(name);
-            if (loggedIn)
+            bool logged = db.Login(name);
+
+            cout << "Logged: " << logged << endl;
+            system("pause");
+
+            if (logged)
             {
-                MainMenu();
+                TicketMenu();
             }
+
+            system("pause");
             break;
         }
 
@@ -950,9 +973,8 @@ int MemberMenu()
             Member m;
             m.Register();
             db.SaveRecord(m);
-            logged = m;
 
-            MainMenu();
+            TicketMenu();
             break;
         }
 
@@ -960,7 +982,8 @@ int MemberMenu()
         {
             Customer c;
             c.SetDetails();
-            MainMenu();
+            TicketMenu();
+
             break;
         }
 
@@ -971,7 +994,8 @@ int MemberMenu()
         }
 
         default:
-            cout << "Invalid choice" << endl;
+            cout << "INVALID CHOICE" << endl << endl;
+            system("pause");
             break;
         }
     }
@@ -981,7 +1005,7 @@ int MemberMenu()
 
 int main()
 {
-    srand(time(0));  // genrates random values
+    srand(time(0));  // generates random values
 
     Title();
     MemberMenu();
