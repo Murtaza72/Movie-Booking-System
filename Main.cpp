@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#define MOVIE_NUM 3
 #define ROW_NUM 10
 #define SEAT_NUM 10
 
@@ -18,10 +17,24 @@ private:
     int duration;
     float rating;
 
+private:
+    void SetDetails();
+
     friend istream& operator>>(istream& file, Movie& m);
+    friend ostream& operator<<(ostream& file, Movie& m);
     friend class Theater;
     friend class Billing;
 };
+
+void Movie::SetDetails()
+{
+    cout << "Movie Name: ";
+    cin >> name;
+    cout << "Duration: ";
+    cin >> duration;
+    cout << "Rating: ";
+    cin >> rating;
+}
 
 istream& operator>>(istream& file, Movie& m)
 {
@@ -47,13 +60,24 @@ istream& operator>>(istream& file, Movie& m)
     return file;
 }
 
+ostream& operator<<(ostream& file, Movie& m)
+{
+    file << m.name << endl;
+    file << m.duration << endl;
+    file << m.rating << endl;
+    file << "--------" << endl;
+
+    return file;
+}
+
 class Theater
 {
 private:
+    int movieNum;
     string name;
     string location;
     int timeSlot[6] = {9, 12, 15, 18, 21, 0};
-    Movie movies[MOVIE_NUM];
+    vector<Movie> movies;
 
 public:
     Theater();
@@ -62,6 +86,10 @@ public:
     int DisplayTimeSlots();
     Movie GetMovie(int id);
     int GetTimeSlot(int time) { return timeSlot[time + 1]; }
+    void AddMovie();
+    void DeleteMovie(string name);
+
+    friend class Manager;
 };
 
 Theater::Theater()
@@ -69,16 +97,83 @@ Theater::Theater()
     ifstream movieFile("Movies.txt", ios::in);
 
     int i = 0;
+    Movie m;
     if (movieFile.is_open())
     {
         while (movieFile.good())
         {
-            movies[i].id = i + 1;
-            movieFile >> movies[i];
+            movieFile >> m;
+            m.id = i + 1;
+            movies.push_back(m);
             i++;
         }
     }
+    movieNum = i - 1;
     movieFile.close();
+}
+
+void Theater::AddMovie()
+{
+    Movie m;
+    m.SetDetails();
+
+    ofstream movieFile("Movies.txt", ios::app);
+    movieFile << m;
+    movieNum++;
+    m.id = movieNum;
+    movies.pop_back();  // some error causes empty record to be pushed
+    movies.push_back(m);
+
+    for (int i = 0; i < movieNum; i++)
+    {
+        cout << "\t[" << i + 1 << "] " << movies[i].name << endl;
+    }
+
+    cout << endl;
+    cout << "NEW MOVIE ADDED SUCCESSFULLY" << endl;
+}
+
+void Theater::DeleteMovie(string name)
+{
+    ifstream movieFile("Movies.txt", ios::in);
+    ofstream temp("temp.txt", ios::out);
+
+    Movie curr;
+    if (movieFile.is_open())
+    {
+        while (movieFile >> curr)
+        {
+            if (!(curr.name == name))
+            {
+                temp << curr;
+            }
+        }
+    }
+    movieFile.close();
+    temp.close();
+
+    remove("Movies.txt");
+    rename("temp.txt", "Movies.txt");
+
+    ifstream mFile("Movies.txt", ios::in);
+    movies.clear();
+    int i = 0;
+    Movie m;
+    if (mFile.is_open())
+    {
+        while (mFile.good())
+        {
+            mFile >> m;
+            m.id = i + 1;
+            movies.push_back(m);
+            i++;
+        }
+    }
+    movieNum = i - 1;
+    mFile.close();
+
+    cout << endl;
+    cout << "MOVIE REMOVED SUCCESSFULLY" << endl << endl;
 }
 
 int Theater::DisplayMovies()
@@ -88,7 +183,7 @@ int Theater::DisplayMovies()
     cout << endl;
     cout << "Select a Movie" << endl << endl;
 
-    for (int i = 0; i < MOVIE_NUM; i++)
+    for (int i = 0; i < movieNum; i++)
     {
         cout << "\t[" << i + 1 << "] " << movies[i].name << endl;
     }
@@ -99,7 +194,7 @@ int Theater::DisplayMovies()
 
     try
     {
-        if (choice > 0 && choice <= MOVIE_NUM)
+        if (choice > 0 && choice <= movieNum)
         {
             return choice;
         }
@@ -107,8 +202,8 @@ int Theater::DisplayMovies()
     }
     catch (int choice)
     {
-        cout << "INVALID CHOICE. ENTER CORRECT MOVIE NUMBER." << endl;
-        system("pause");
+        cout << endl;
+        cout << "INVALID CHOICE. ENTER CORRECT MOVIE NUMBER." << endl << endl;
         return -1;
     }
 }
@@ -154,8 +249,8 @@ int Theater::DisplayTimeSlots()
     }
     catch (int choice)
     {
-        cout << "INVALID CHOICE. ENTER CORRECT SLOT NUMBER" << endl;
-        system("pause");
+        cout << endl;
+        cout << "INVALID CHOICE. ENTER CORRECT SLOT NUMBER" << endl << endl;
         return -1;
     }
 }
@@ -336,7 +431,7 @@ void Billing::PrintReceipt(Ticket t)
 class Booking
 {
 private:
-    int bookedSeats[5 + 1][MOVIE_NUM + 1][ROW_NUM + 1][SEAT_NUM + 1] = {0};
+    int bookedSeats[5 + 1][20 + 1][ROW_NUM + 1][SEAT_NUM + 1] = {0};
     vector<Ticket> tickets;
 
 private:
@@ -660,6 +755,7 @@ public:
     void SaveRecord(Member m);
     bool Login(string name);
     bool CheckPassword(Member m, string password);
+    void DisplayMemberInformation();
 };
 
 MemberDatabase::MemberDatabase()
@@ -731,6 +827,66 @@ bool MemberDatabase::Login(string name)
     return logged;
 }
 
+void MemberDatabase::DisplayMemberInformation()
+{
+    cout << "=========================================================" << endl;
+    cout << "                   MEMBER INFORMATION                    " << endl;
+    cout << "=========================================================" << endl;
+
+    for (int i = 0; i < members.size(); i++)
+    {
+        cout << "Account Number : " << members[i].accountNumber << endl;
+        cout << "Name           : " << members[i].name << endl;
+        cout << "Phone no.      : " << members[i].phone << endl;
+        cout << "E-mail         : " << members[i].email << endl;
+        cout << "---------------------------------------------------------"
+             << endl;
+    }
+}
+
+class Manager
+{
+private:
+    string name, password;
+
+public:
+    bool Login();
+};
+
+bool Manager::Login()
+{
+    int chance = 3;
+    bool flag = false;
+
+    while (chance > 0)
+    {
+        cout << "Username: ";
+        cin >> name;
+        cout << "Password: ";
+        cin >> password;
+
+        if (name == "admin" && password == "admin")
+        {
+            cout << "Welcome to Manager Menu" << endl;
+            flag = true;
+            break;
+        }
+        else
+        {
+            cout << "Invalid username or password" << endl;
+        }
+        chance--;
+    }
+
+    if (!flag)
+    {
+        cout << "Exceeded maximum attempts. Terminating." << endl;
+        exit(0);
+    }
+
+    return flag;
+}
+
 // helper functions
 
 void Title()
@@ -774,8 +930,9 @@ void Title()
 
 Theater theater;
 Booking booking;
-MemberDatabase mdb;
+MemberDatabase db;
 Billing billing;
+Manager manager;
 
 void TicketMenu()
 {
@@ -808,9 +965,9 @@ void TicketMenu()
                     theater.DisplayMovieDetails(mno);
                     booking.DisplayAvailableSeats(slot, mno);
                     booking.BookTicket(slot, mno);
-                    system("pause");
                 }
             }
+            system("pause");
             break;
         }
 
@@ -841,10 +998,8 @@ void TicketMenu()
     }
 }
 
-int main()
+void CustomerMenu()
 {
-    srand(time(0));  // generates random values
-
     int choice = 0;
     string name;
 
@@ -856,7 +1011,7 @@ int main()
         cout << "[1] Login (for Members)" << endl;
         cout << "[2] Signup for Membership" << endl;
         cout << "[3] Continue as guest" << endl;
-        cout << "[4] Exit" << endl << endl;
+        cout << "[4] Previous Menu" << endl << endl;
         cout << "Choice: ";
         cin >> choice;
 
@@ -868,7 +1023,7 @@ int main()
             cout << "Enter the details of the Member:" << endl;
             cout << "Name: ";
             cin >> name;
-            bool logged = mdb.Login(name);
+            bool logged = db.Login(name);
 
             if (logged)
             {
@@ -883,7 +1038,7 @@ int main()
         {
             Member m;
             m.Register();
-            mdb.SaveRecord(m);
+            db.SaveRecord(m);
 
             TicketMenu();
             break;
@@ -900,7 +1055,6 @@ int main()
 
         case 4:
         {
-            cout << "Exiting" << endl;
             break;
         }
 
@@ -910,6 +1064,107 @@ int main()
             break;
         }
     }
+}
 
+void ManagerMenu()
+{
+    int choice = 0;
+    string name;
+    Manager m;
+
+    while (choice != 4)
+    {
+        Title();
+
+        cout << endl;
+        cout << "[1] Add Movie" << endl;
+        cout << "[2] Delete Movie" << endl;
+        cout << "[3] Display Member Information" << endl;
+        cout << "[4] Previous Menu" << endl << endl;
+        cout << "Choice: ";
+        cin >> choice;
+
+        switch (choice)
+        {
+        case 1:
+        {
+            theater.AddMovie();
+            system("pause");
+            break;
+        }
+
+        case 2:
+        {
+            string name;
+            cout << "Movie Name: ";
+            cin >> name;
+            theater.DeleteMovie(name);
+            system("pause");
+            break;
+        }
+
+        case 3:
+        {
+            db.DisplayMemberInformation();
+            system("pause");
+            break;
+        }
+
+        case 4:
+        {
+            break;
+        }
+
+        default:
+            cout << "INVALID CHOICE" << endl << endl;
+            system("pause");
+            break;
+        }
+    }
+}
+
+int main()
+{
+    srand(time(0));  // generates random values
+
+    int choice = 0;
+
+    while (choice != 3)
+    {
+        Title();
+
+        cout << endl;
+        cout << "[1] Customer Menu" << endl;
+        cout << "[2] Manager Menu" << endl;
+        cout << "[3] Exit" << endl << endl;
+        cout << "Choice: ";
+        cin >> choice;
+
+        switch (choice)
+        {
+        case 1:
+        {
+            CustomerMenu();
+            break;
+        }
+
+        case 2:
+        {
+            ManagerMenu();
+            break;
+        }
+
+        case 3:
+        {
+            cout << "Exiting" << endl;
+            break;
+        }
+
+        default:
+            cout << "INVALID CHOICE" << endl;
+            system("pause");
+            break;
+        }
+    }
     return 0;
 }
