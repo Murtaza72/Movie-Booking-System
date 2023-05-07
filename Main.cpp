@@ -178,13 +178,14 @@ private:
     void SetType();
     void SetPrice();
     void SetTicketNum();
+
+public:
+    void SetDetails(int slot, int mno);
+
     friend istream& operator>>(istream& file, Ticket& t);
     friend ostream& operator<<(ostream& file, Ticket& t);
     friend class Booking;
     friend class Billing;
-
-public:
-    void SetDetails(int slot, int mno);
 };
 
 void Ticket::SetDetails(int slot, int mno)
@@ -323,8 +324,8 @@ void Billing::PrintReceipt(Ticket t)
          << "======================================================\n";
 
     cout << "Ticket Number: " << t.ticketNum << endl;
-    cout << "Movie Name: " << m.name << "\t\tTime: " << time << ":00("
-         << t.timeSlot << ")" << endl;
+    cout << "Movie Name: " << m.name << "\t\tTime: " << time << ":00" << endl;
+    cout << "Duration: " << m.duration << " minutes" << endl;
     cout << "Seat Type: " << t.type << endl;
     cout << "Seat: " << row << t.seatNo << endl;
     cout << "Price: Rs. " << t.price << endl;
@@ -365,17 +366,6 @@ Booking::Booking()
             tickets.push_back(t);
         }
         booking.close();
-    }
-}
-
-Ticket Booking::GetTicket(int tNum)
-{
-    for (int i = 0; i < tickets.size(); i++)
-    {
-        if (tickets[i].ticketNum == tNum)
-        {
-            return tickets[i];
-        }
     }
 }
 
@@ -436,17 +426,32 @@ void Booking::RemoveTicketFromFile(int tNum)
 
 void Booking::CancelTicket(int tNum)
 {
-    Ticket t = GetTicket(tNum);
+    Ticket t;
+    bool flag = false;
 
-    if (CheckSeat(t.timeSlot, t.movieID, t.rowNo, t.seatNo) == 1)
+    for (int i = 0; i < tickets.size(); i++)
     {
-        bookedSeats[t.timeSlot][t.movieID][t.rowNo][t.seatNo] = 0;
-        RemoveTicketFromFile(tNum);
+        if (tickets[i].ticketNum == tNum)
+        {
+            t = tickets[i];
+            flag = true;
+        }
     }
-    else if (CheckSeat(t.timeSlot, t.movieID, t.rowNo, t.seatNo) == 0)
+
+    if (flag)
     {
+        if (CheckSeat(t.timeSlot, t.movieID, t.rowNo, t.seatNo) == 1)
+        {
+            bookedSeats[t.timeSlot][t.movieID][t.rowNo][t.seatNo] = 0;
+            RemoveTicketFromFile(tNum);
+        }
+    }
+    else
+    {
+        cout << endl;
         cout << "TICKET DOESN'T EXIST IN OUR DATABASE. DID YOU ENTER THE "
-                "CORRECT DETAILS?"
+                "CORRECT TICKET NUMBER?"
+             << endl
              << endl;
     }
 }
@@ -466,11 +471,13 @@ void Booking::DisplayAvailableSeats(int timeSlot, int mId)
         }
         else if (i > 3 && i <= 6 && skip % 2 == 1)
         {
+            cout << endl;
             cout << "[Gold]" << endl;
             skip++;
         }
         else if (i > 6 && i <= 10 && skip % 2 == 0)
         {
+            cout << endl;
             cout << "[Silver]" << endl;
             skip++;
         }
@@ -488,8 +495,10 @@ void Booking::DisplayAvailableSeats(int timeSlot, int mId)
                 cout << "\t[" << j << "]";
             }
         }
-        cout << endl << endl;
+        cout << endl;
     }
+
+    cout << endl;
     cout << "\t\t\t-----------------------------------" << endl;
     cout << "\t\t\t     All Eyes This Way Please!" << endl;
     cout << endl << endl;
@@ -566,6 +575,7 @@ void Customer::SetEmail()
         cin >> email;
     }
 }
+
 class Member : Customer
 {
 private:
@@ -576,6 +586,7 @@ private:
 
 public:
     void Register();
+
     friend istream& operator>>(istream& file, Member& m);
     friend ostream& operator<<(ostream& file, Member& m);
     friend class MemberDatabase;
@@ -763,7 +774,7 @@ void Title()
 
 Theater theater;
 Booking booking;
-MemberDatabase db;
+MemberDatabase mdb;
 Billing billing;
 
 void TicketMenu()
@@ -830,8 +841,10 @@ void TicketMenu()
     }
 }
 
-int MemberMenu()
+int main()
 {
+    srand(time(0));  // generates random values
+
     int choice = 0;
     string name;
 
@@ -855,7 +868,7 @@ int MemberMenu()
             cout << "Enter the details of the Member:" << endl;
             cout << "Name: ";
             cin >> name;
-            bool logged = db.Login(name);
+            bool logged = mdb.Login(name);
 
             if (logged)
             {
@@ -870,7 +883,7 @@ int MemberMenu()
         {
             Member m;
             m.Register();
-            db.SaveRecord(m);
+            mdb.SaveRecord(m);
 
             TicketMenu();
             break;
@@ -880,8 +893,8 @@ int MemberMenu()
         {
             Customer c;
             c.SetDetails();
-            TicketMenu();
 
+            TicketMenu();
             break;
         }
 
@@ -897,16 +910,6 @@ int MemberMenu()
             break;
         }
     }
-
-    return choice;
-}
-
-int main()
-{
-    srand(time(0));  // generates random values
-
-    Title();
-    MemberMenu();
 
     return 0;
 }
